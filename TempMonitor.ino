@@ -1,13 +1,12 @@
 #include <Wire.h>
 #include <SeeedGrayOLED.h>
-#include <avr/pgmspace.h>
 #include <SoftwareSerial.h>
 
 /*
  * Compute an average temparature over 15 min using this temperature sensor:
  * http://www.seeedstudio.com/wiki/Grove_-_Temperature_Sensor
  * An history over the last 24h is stored and can be browsed using a potentiometer.
- * Everything is displayed using an this OLED display:
+ * Everything is displayed using this OLED display:
  * http://www.seeedstudio.com/wiki/index.php?title=Grove_-_OLED_Display_96*96
 */
 
@@ -25,31 +24,18 @@ volatile double history[96] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-//volatile int state = LOW;
-
-//SoftwareSerial mySerial(10, 11);
-
-/*
-void dumpHistory() {
-  for(int i = 0; i < 10; ++i) {
-    mySerial.println("Hop");
-  }
-  state = !state;
-  digitalWrite(4, state); 
-}
-*/
+// The oled screen is connected to one of the I2C ports.
+// The temperature sensor is connected to the A0 port.
+// The potentiometer is connected to the A1 port.
 
 void setup()
 {
-  //mySerial.begin(9600);
-  
   pinMode(4, OUTPUT);
-  //attachInterrupt(0, dumpHistory, CHANGE);
   
   Wire.begin();
-  SeeedGrayOled.init();             //initialize SEEED OLED display
-  SeeedGrayOled.clearDisplay();     //Clear Display.
-  SeeedGrayOled.setNormalDisplay(); //Set Normal Display Mode
+  SeeedGrayOled.init();             // Initialize SEEED OLED display
+  SeeedGrayOled.clearDisplay();     // Clear Display.
+  SeeedGrayOled.setNormalDisplay(); // Set Normal Display Mode
   SeeedGrayOled.setVerticalMode();  // Set to vertical mode for displaying text
   
   cli();
@@ -95,15 +81,16 @@ void pushMeasure(double measure) {
   history[0] = measure;
 }
 
+// Timer 1 is configured to run at 1Hz.
+// It will measure the temperature every minute.
+// The temperature is averaged over 15 minutes, then
+// stored into the 24h history.
 ISR(TIMER1_COMPA_vect) {
   static char i = 0;
   static double averageTemperature = 0;
   static char count = 0;
   ++i;
-  //Serial.println("Tick");
-  if(i == 60) { // Every XX seconds
-    //Serial.println("Measure");
-    //Serial.println((int)count);
+  if(i == 60) { // Every 60 seconds
     if(count == 0) {
       averageTemperature = getTemperature();
     } else if(count <= 15) {
@@ -117,8 +104,6 @@ ISR(TIMER1_COMPA_vect) {
     } else {
       ++count;
     }
-    
-    //Serial.println(currentTemperature);
     
     i = 0;
   }
@@ -149,16 +134,5 @@ void loop()
     SeeedGrayOled.putChar(' ');
   }
   
-  //SeeedGrayOled.setTextXY(2,0);
-  //SeeedGrayOled.putString("");
-  
   delay(100);
-  //SeeedGrayOled.clearDisplay();
-  /*
-  SeeedGrayOled.setTextXY(i,0);  //set Cursor to ith line, 0th column
-  SeeedGrayOled.setGrayLevel(i); //Set Grayscale level. Any number between 0 - 15.
-  SeeedGrayOled.putString("Hello World"); //Print Hello World
-  */
 }
-
-
